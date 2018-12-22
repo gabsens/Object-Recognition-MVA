@@ -1,0 +1,115 @@
+\documentclass[10pt,twocolumn,letterpaper]{article}
+
+\usepackage{cvpr}
+\usepackage{times}
+\usepackage{epsfig}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{caption}
+\usepackage{float}
+
+% Include other packages here, before hyperref.
+
+% If you comment hyperref and then uncomment it, you should delete
+% egpaper.aux before re-running latex.  (Or just hit 'q' on the first latex
+% run, let it finish, and you should be clear).
+\usepackage[breaklinks=true,bookmarks=false]{hyperref}
+
+\cvprfinalcopy % *** Uncomment this line for the final submission
+
+\def\cvprPaperID{****} % *** Enter the CVPR Paper ID here
+\def\httilde{\mbox{\tt\raisebox{-.5ex}{\symbol{126}}}}
+
+% Pages are numbered in submission mode, and unnumbered in camera-ready
+%\ifcvprfinal\pagestyle{empty}\fi
+\setcounter{page}{4321}
+\begin{document}
+
+%%%%%%%%% TITLE
+\title{HW 3}
+
+\author{Gabriel ROMON\\
+{\tt\small gabriel.romon@ensae.fr}
+% For a paper whose authors are all at the same institution,
+% omit the following lines up until the closing ``}''.
+% Additional authors and addresses can be added with ``\and'',
+% just like the second author.
+% To save space, use either the email address or home page, not both
+}
+
+\maketitle
+%\thispagestyle{empty}
+
+%%%%%%%%% ABSTRACT
+\begin{abstract}
+   We perform birds image classification on a subset of Caltech-UCSD Birds-200-2011 dataset without any external annotation. We train a CNN from scratch to establish a baseline, and then substantially improve our results with transfer learning.
+\end{abstract}
+
+%%%%%%%%% BODY TEXT
+\section{Introduction}
+The dataset we were supplied with is a subset of the original Caltech-UCSD Birds-200-2011 dataset, reduced to $20$ classes, instead of the original $200$ bird species. There are $1082$ training images and $103$ validation images. 
+
+\section{Preprocessing}
+The pictures have different shapes and within a given species, birds exhibit varying sizes and poses. There are also significant changes in illumination and background. We have also observed occlusion by twigs or leaves. 
+
+While birds are always in the focus of the picture, there may be larger objects also in the foreground, such as the trunk of a tree. This motivates the need for segmentation of each image. Even though bounding boxes are available in the original dataset, they were not provided for the competition. To achieve segmentation, we have experimented with edge detection techniques (canny detector followed by dilatation and erosion), as well as histogram-based (Otsu binarization) and color-based techniques (color spaces). While these approaches work well on individual images after some parameter tuning, they do not generalize well. We also contemplated using a pretrained Mask R-CNN model, but we did not have enough time to implement it.
+
+We gave up on segmentation and decided to use deep learning methods. Given the size of the dataset, it was necessary to perform some data augmentation beforehand. We simply used the transforms \verb!RandomRotation! and \verb!RandomHorizontalFlip! available in Pytorch to make our networks more robust.
+
+\section{Home-made CNN}
+To create a baseline we trained a CNN by stacking $14$ convolutional layers, each one followed by batchnormalization and ReLU. We also added some pooling layers, and the network ends on a linear layer. The CNN was trained using stochastic gradient descent and the number of epochs was chosen manually. There were clear generalization issues as the validation accuracy was significantly lower than the training one, so we added some dropout to mitigate overfitting.
+
+\begin{figure}[H]
+  \centering
+\begin{tabular}{|c|c|c|} \hline
+Training & Validation  & Kaggle \\ \hline
+\begin{tabular}{c} $71 \%$
+\end{tabular} &
+\begin{tabular}{c} $50 \%$
+\end{tabular} &
+\begin{tabular}{c} $51 \%$
+\end{tabular} \\ \hline
+\end{tabular}
+\captionof{table}{Accuracy for our CNN}
+\end{figure}
+
+
+\section{Transfer learning}
+Since the dataset is quite small, training a network from scratch is not the best thing to do. Instead we imported pretrained models with elaborate architectures and modified their last linear layer to fit our needs. These models were originally trained on Imagenet, which has a nonempty intersection with Birds-200-2011, so results should be taken with a grain of salt.
+
+\begin{figure}[H]
+  \centering
+\begin{tabular}{|c|c|c|c|} \hline
+& Training & Validation  & Kaggle \\ \hline
+\begin{tabular}{c} Resnet-152
+\end{tabular} &
+\begin{tabular}{c} $91 \%$
+\end{tabular} &
+\begin{tabular}{c} $90 \%$
+\end{tabular} &
+\begin{tabular}{c} $83 \%$
+\end{tabular} \\ \hline
+\begin{tabular}{c} Densenet-161
+\end{tabular} &
+\begin{tabular}{c} $90 \%$
+\end{tabular} &
+\begin{tabular}{c} $89 \%$
+\end{tabular} &
+\begin{tabular}{c} $73 \%$
+\end{tabular} \\ \hline
+\begin{tabular}{c} PNASNet-5-Large
+\end{tabular} &
+\begin{tabular}{c} $92 \%$
+\end{tabular} &
+\begin{tabular}{c} $93 \%$
+\end{tabular} &
+\begin{tabular}{c} $80 \%$
+\end{tabular} \\ \hline
+\end{tabular}
+\captionof{table}{Accuracy using transfer learning}
+\end{figure}
+
+These models could be stacked to get a model with better accuracy and less variance, but we did not have time to implement this.
+
+\end{document}
